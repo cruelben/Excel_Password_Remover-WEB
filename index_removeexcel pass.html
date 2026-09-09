@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sblocca Excel Completo - Web App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+        .warning-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .warning-box ul {
+            color: #856404;
+            margin-left: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .file-drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+        }
+
+        .file-drop-zone:hover {
+            background: #eef1ff;
+            border-color: #764ba2;
+        }
+
+        .file-drop-zone.dragover {
+            background: #e0e4ff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .file-drop-zone.has-file {
+            border-style: solid;
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .drop-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 16px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 30px;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .results-box {
+            display: none;
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .results-box h3 {
+            color: #155724;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #c3e6cb;
+            font-size: 14px;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .result-value {
+            color: #155724;
+        }
+
+        .download-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+
+        .download-link:hover {
+            background: #218838;
+        }
+
+        .error-box {
+            display: none;
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            color: #721c24;
+        }
+
+        .info-section {
+            background: #e7f3ff;
+            border-left: 5px solid #667eea;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #004085;
+        }
+
+        .info-section h4 {
+            margin-bottom: 10px;
+            color: #004085;
+        }
+
+        .info-section ul {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Sblocca Excel Completo</h1>
+        <p class="subtitle">Rimuovi protezioni da file .xlsx direttamente nel browser</p>
+
+        <div class="warning-box">
+            <h3>⚠️ ATTENZIONE - USO RESPONSABILE</h3>
+            <ul>
+                <li>Utilizzare SOLO in caso di emergenza</li>
+                <li>Il proprietario del file deve essere informato e aver dato il proprio consenso</li>
+                <li>L'utilizzo deve essere conforme alle policy e alle normative interne Stellantis</li>
+                <li>Questa procedura crea un secondo file sbloccato, lasciando l'originale invariato</li>
+            </ul>
+        </div>
+
+        <div class="file-drop-zone" id="dropZone">
+            <div class="drop-icon">📁</div>
+            <div class="drop-text" id="dropText">Trascina qui il file Excel (.xlsx) o clicca per selezionare</div>
+            <div class="file-name" id="fileName"></div>
+            <input type="file" class="file-input" id="fileInput" accept=".xlsx">
+        </div>
+
+        <button class="btn" id="processBtn" disabled>🚀 Sblocca File Excel</button>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="status-text" id="statusText">Elaborazione in corso...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+        </div>
+
+        <div class="results-box" id="resultsBox">
+            <h3>✅ SBLOCCO COMPLETATO!</h3>
+            <div class="result-item">
+                <span class="result-label">Fogli sbloccati:</span>
+                <span class="result-value" id="sheetsUnlocked">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Struttura cartella:</span>
+                <span class="result-value" id="workbookUnlocked">Già libera</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Celle bloccate:</span>
+                <span class="result-value" id="cellsUnlocked">Già libere</span>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="#" class="download-link" id="downloadLink" download>⬇️ Scarica File Sbloccato</a>
+            </div>
+        </div>
+
+        <div class="error-box" id="errorBox">
+            <strong>❌ Errore:</strong> <span id="errorMessage"></span>
+        </div>
+
+        <div class="info-section">
+            <h4>📋 Cosa viene sbloccato:</h4>
+            <ul>
+                <li>Fogli (sheetProtection)</li>
+                <li>Struttura cartella di lavoro (workbookProtection)</li>
+                <li>Finestra (lockWindows)</li>
+                <li>Celle bloccate (locked="1" negli stili)</li>
+            </ul>
+            <h4 style="margin-top: 15px;">🔒 Cosa NON viene sbloccato:</h4>
+            <ul>
+                <li>Password VBA (rimozione disattivata su richiesta)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        // Elementi DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const dropText = document.getElementById('dropText');
+        const processBtn = document.getElementById('processBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const resultsBox = document.getElementById('resultsBox');
+        const errorBox = document.getElementById('errorBox');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let selectedFile = null;
+
+        // Gestione drag & drop
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.xlsx')) {
+                showError('Per favore seleziona un file Excel (.xlsx)');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = `📄 ${file.name}`;
+            dropText.style.display = 'none';
+            dropZone.classList.add('has-file');
+            processBtn.disabled = false;
+            hideError();
+            hideResults();
+        }
+
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            try {
+                processBtn.disabled = true;
+                progressContainer.style.display = 'block';
+                hideError();
+                hideResults();
+
+                updateProgress(10, 'Lettura file...');
+
+                const arrayBuffer = await readFileAsArrayBuffer(selectedFile);
+                
+                updateProgress(20, 'Decompressione ZIP...');
+                
+                const zip = new JSZip();
+                const loadedZip = await zip.loadAsync(arrayBuffer);
+
+                updateProgress(30, 'Analisi struttura...');
+
+                let unlockedSheets = 0;
+                let workbookUnlocked = false;
+                let cellsUnlocked = false;
+
+                // 1. Sblocca fogli (sheetProtection)
+                updateProgress(40, 'Sblocco fogli...');
+                const worksheetsPromises = [];
+                
+                loadedZip.forEach((relativePath, file) => {
+                    if (relativePath.match(/^xl\/worksheets\/sheet\d+\.xml$/)) {
+                        worksheetsPromises.push(
+                            file.async('string').then(content => {
+                                const modified = removeSheetProtection(content);
+                                if (modified !== content) {
+                                    unlockedSheets++;
+                                    loadedZip.file(relativePath, modified);
+                                }
+                            })
+                        );
+                    }
+                });
+
+                await Promise.all(worksheetsPromises);
+
+                // 2. Sblocca struttura cartella (workbookProtection)
+                updateProgress(60, 'Sblocco struttura cartella...');
+                if (loadedZip.file('xl/workbook.xml')) {
+                    const workbookContent = await loadedZip.file('xl/workbook.xml').async('string');
+                    const modifiedWorkbook = removeWorkbookProtection(workbookContent);
+                    if (modifiedWorkbook !== workbookContent) {
+                        workbookUnlocked = true;
+                        loadedZip.file('xl/workbook.xml', modifiedWorkbook);
+                    }
+                }
+
+                // 3. Sblocca celle (styles.xml)
+                updateProgress(75, 'Sblocco celle...');
+                if (loadedZip.file('xl/styles.xml')) {
+                    const stylesContent = await loadedZip.file('xl/styles.xml').async('string');
+                    const modifiedStyles = removeCellLocks(stylesContent);
+                    if (modifiedStyles !== stylesContent) {
+                        cellsUnlocked = true;
+                        loadedZip.file('xl/styles.xml', modifiedStyles);
+                    }
+                }
+
+                // 4. Ricompressione
+                updateProgress(85, 'Ricompattazione...');
+                const blob = await loadedZip.generateAsync({
+                    type: 'blob',
+                    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                updateProgress(100, 'Completato!');
+
+                // Prepara download
+                const baseName = selectedFile.name.replace(/\.xlsx$/i, '');
+                const newFileName = `${baseName}_sbloccato.xlsx`;
+                
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = newFileName;
+
+                // Mostra risultati
+                document.getElementById('sheetsUnlocked').textContent = unlockedSheets;
+                document.getElementById('workbookUnlocked').textContent = workbookUnlocked ? 'Sbloccata' : 'Già libera';
+                document.getElementById('cellsUnlocked').textContent = cellsUnlocked ? 'Sbloccate' : 'Già libere';
+
+                resultsBox.style.display = 'block';
+                statusText.textContent = 'Elaborazione completata con successo!';
+
+            } catch (error) {
+                console.error(error);
+                showError('Errore durante l\'elaborazione: ' + error.message);
+                progressContainer.style.display = 'none';
+            } finally {
+                processBtn.disabled = false;
+            }
+        });
+
+        function removeSheetProtection(xml) {
+            let modified = xml;
+            let sp;
+            
+            while ((sp = modified.indexOf('<sheetProtection')) !== -1) {
+                const closeSelf = modified.indexOf('/>', sp);
+                const closeTag = modified.indexOf('</sheetProtection>', sp);
+                
+                let ep;
+                if (closeSelf !== -1 && (closeTag === -1 || closeSelf < closeTag)) {
+                    ep = closeSelf + 2;
+                } else if (closeTag !== -1) {
+                    ep = closeTag + '</sheetProtection>'.length;
+                } else {
+                    break;
+                }
+                
+                modified = modified.substring(0, sp - 1) + modified.substring(ep);
+            }
+            
+            return modified;
+        }
+
+        function removeWorkbookProtection(xml) {
+            const sp = xml.indexOf('<workbookProtection');
+            if (sp === -1) return xml;
+            
+            const ep = xml.indexOf('/>', sp);
+            if (ep === -1) return xml;
+            
+            return xml.substring(0, sp - 1) + xml.substring(ep + 2);
+        }
+
+        function removeCellLocks(xml) {
+            let modified = xml;
+            
+            // Rimuove locked="1"
+            modified = modified.replace(/locked="1"/g, '');
+            
+            // Rimuove applyProtection="1"
+            modified = modified.replace(/applyProtection="1"/g, '');
+            
+            // Rimuove tag <protection .../>
+            while (modified.indexOf('<protection') !== -1) {
+                const sp = modified.indexOf('<protection');
+                const ep = modified.indexOf('/>', sp);
+                if (ep === -1) break;
+                modified = modified.substring(0, sp - 1) + modified.substring(ep + 2);
+            }
+            
+            return modified;
+        }
+
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function updateProgress(percent, status) {
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+            statusText.textContent = status;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorBox.style.display = 'block';
+        }
+
+        function hideError() {
+            errorBox.style.display = 'none';
+        }
+
+        function hideResults() {
+            resultsBox.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
