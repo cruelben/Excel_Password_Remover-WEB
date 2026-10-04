@@ -299,7 +299,7 @@
                 <span class="result-value" id="workbookUnlocked">Già libera</span>
             </div>
             <div class="result-item">
-                <span class="result-label">Celle bloccate:</span>
+                <span class="result-label">Stili celle:</span>
                 <span class="result-value" id="cellsUnlocked">Già libere</span>
             </div>
             <div style="text-align: center; margin-top: 20px;">
@@ -317,7 +317,7 @@
                 <li>Fogli (sheetProtection)</li>
                 <li>Struttura cartella di lavoro (workbookProtection)</li>
                 <li>Finestra (lockWindows)</li>
-                <li>Celle bloccate (locked="1" negli stili)</li>
+                <li>Celle: non vengono modificate; senza protezione del foglio restano modificabili</li>
             </ul>
             <h4 style="margin-top: 15px;">🔒 Cosa NON viene sbloccato:</h4>
             <ul>
@@ -419,6 +419,7 @@
                             file.async('string').then(content => {
                                 const modified = removeSheetProtection(content);
                                 if (modified !== content) {
+                                    validateXml(modified, relativePath);
                                     unlockedSheets++;
                                     loadedZip.file(relativePath, modified);
                                 }
@@ -435,21 +436,16 @@
                     const workbookContent = await loadedZip.file('xl/workbook.xml').async('string');
                     const modifiedWorkbook = removeWorkbookProtection(workbookContent);
                     if (modifiedWorkbook !== workbookContent) {
+                        validateXml(modifiedWorkbook, 'xl/workbook.xml');
                         workbookUnlocked = true;
                         loadedZip.file('xl/workbook.xml', modifiedWorkbook);
                     }
                 }
 
-                // 3. Sblocca celle (styles.xml)
-                updateProgress(75, 'Sblocco celle...');
-                if (loadedZip.file('xl/styles.xml')) {
-                    const stylesContent = await loadedZip.file('xl/styles.xml').async('string');
-                    const modifiedStyles = removeCellLocks(stylesContent);
-                    if (modifiedStyles !== stylesContent) {
-                        cellsUnlocked = true;
-                        loadedZip.file('xl/styles.xml', modifiedStyles);
-                    }
-                }
+                // 3. Celle: non modificate.
+                // Con il foglio non protetto, l'attributo locked non blocca la modifica delle celle.
+                updateProgress(75, 'Conservazione stili e formattazione...');
+                cellsUnlocked = false;
 
                 // 4. Ricompressione
                 updateProgress(85, 'Ricompattazione...');
@@ -473,7 +469,7 @@
                 // Mostra risultati
                 document.getElementById('sheetsUnlocked').textContent = unlockedSheets;
                 document.getElementById('workbookUnlocked').textContent = workbookUnlocked ? 'Sbloccata' : 'Già libera';
-                document.getElementById('cellsUnlocked').textContent = cellsUnlocked ? 'Sbloccate' : 'Già libere';
+                document.getElementById('cellsUnlocked').textContent = 'Non modificate: non necessarie con il foglio non protetto';
 
                 resultsBox.style.display = 'block';
                 statusText.textContent = 'Elaborazione completata con successo!';
@@ -490,11 +486,11 @@
         function removeSheetProtection(xml) {
             let modified = xml;
             let sp;
-            
+
             while ((sp = modified.indexOf('<sheetProtection')) !== -1) {
                 const closeSelf = modified.indexOf('/>', sp);
                 const closeTag = modified.indexOf('</sheetProtection>', sp);
-                
+
                 let ep;
                 if (closeSelf !== -1 && (closeTag === -1 || closeSelf < closeTag)) {
                     ep = closeSelf + 2;
@@ -503,41 +499,44 @@
                 } else {
                     break;
                 }
-                
-                modified = modified.substring(0, sp - 1) + modified.substring(ep);
+
+                // IMPORTANTE: non usare sp - 1.
+                // Il carattere precedente al tag appartiene all'XML e non va cancellato.
+                modified = modified.substring(0, sp) + modified.substring(ep);
             }
-            
+
             return modified;
         }
 
         function removeWorkbookProtection(xml) {
             const sp = xml.indexOf('<workbookProtection');
             if (sp === -1) return xml;
-            
+
             const ep = xml.indexOf('/>', sp);
             if (ep === -1) return xml;
-            
-            return xml.substring(0, sp - 1) + xml.substring(ep + 2);
+
+            // IMPORTANTE: preserva integralmente tutto ciò che precede il tag.
+            return xml.substring(0, sp) + xml.substring(ep + 2);
         }
 
         function removeCellLocks(xml) {
-            let modified = xml;
-            
-            // Rimuove locked="1"
-            modified = modified.replace(/locked="1"/g, '');
-            
-            // Rimuove applyProtection="1"
-            modified = modified.replace(/applyProtection="1"/g, '');
-            
-            // Rimuove tag <protection .../>
-            while (modified.indexOf('<protection') !== -1) {
-                const sp = modified.indexOf('<protection');
-                const ep = modified.indexOf('/>', sp);
-                if (ep === -1) break;
-                modified = modified.substring(0, sp - 1) + modified.substring(ep + 2);
+            // Questa operazione NON è necessaria per rendere modificabili le celle:
+            // una volta rimossa sheetProtection, Excel permette già di modificare le celle.
+            // Manteniamo quindi styles.xml intatto per evitare modifiche inutili e possibili
+            // alterazioni di stile/formattazione del workbook.
+            return xml;
+        }
+
+        function validateXml(xml, fileName) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xml, 'application/xml');
+            const parserError = doc.getElementsByTagName('parsererror')[0];
+
+            if (parserError) {
+                throw new Error('XML non valido in ' + fileName + ': il file sarebbe corrotto dopo la modifica.');
             }
-            
-            return modified;
+
+            return true;
         }
 
         function readFileAsArrayBuffer(file) {
